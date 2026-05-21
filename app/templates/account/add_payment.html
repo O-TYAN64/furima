@@ -1,60 +1,177 @@
 {% extends "base.html" %}
 {% block title %}カードを追加{% endblock %}
 
+{% block head %}
+<script src="https://js.stripe.com/v3/"></script>
+{% endblock %}
+
 {% block content %}
 <div class="inner form-page">
   <h1 class="page-title">支払い方法を追加</h1>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}{% for category, message in messages %}
-      <div class="flash flash-{{ category }}">{{ message }}</div>
-    {% endfor %}{% endif %}
-  {% endwith %}
-
-  <form method="post">
-    <input type="hidden" name="next_url" value="{{ next_url }}">
-
-    <div class="form-group">
-      <label>カードブランド <span class="required">*</span></label>
-      <select name="card_brand" required>
-        <option value="">選択してください</option>
-        <option value="Visa">Visa</option>
-        <option value="Mastercard">Mastercard</option>
-        <option value="JCB">JCB</option>
-        <option value="AmericanExpress">American Express</option>
-      </select>
+  <!-- カードプレビュー -->
+  <div class="card-preview" id="cardPreview">
+    <div class="card-preview-bg"></div>
+    <div class="card-preview-chip">▬▬</div>
+    <div class="card-preview-number">
+      **** &nbsp; **** &nbsp; **** &nbsp; <span id="prev-last4">????</span>
     </div>
-    <div class="form-group">
-      <label>カード番号下4桁 <span class="required">*</span></label>
-      <input type="text" name="last4" maxlength="4" placeholder="1234" pattern="\d{4}" required>
-    </div>
-    <div class="form-group">
-      <label>カード名義（ローマ字） <span class="required">*</span></label>
-      <input type="text" name="card_name" placeholder="TARO YAMADA" required>
-    </div>
-    <div class="form-group">
-      <label>有効期限 <span class="required">*</span></label>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <select name="expiry_month" required>
-          <option value="">月</option>
-          {% for m in range(1,13) %}
-            <option value="{{ m }}">{{ "%02d"|format(m) }}</option>
-          {% endfor %}
-        </select>
-        <span>/</span>
-        <select name="expiry_year" required>
-          <option value="">年</option>
-          {% for y in range(2025, 2036) %}
-            <option value="{{ y }}">{{ y }}</option>
-          {% endfor %}
-        </select>
+    <div class="card-preview-bottom">
+      <div class="card-preview-holder">
+        <div class="card-preview-label">CARD HOLDER</div>
+        <div id="prev-name">YOUR NAME</div>
+      </div>
+      <div class="card-preview-expiry">
+        <div class="card-preview-label">EXPIRES</div>
+        <div id="prev-expiry">MM / YY</div>
+      </div>
+      <div class="card-preview-brand-wrap">
+        <span id="prev-brand" class="card-brand-badge">💳</span>
       </div>
     </div>
+  </div>
 
-    <div style="display:flex; gap:12px;">
-      <a class="btn btn-outline" href="{{ next_url }}" style="flex:1; text-align:center;">キャンセル</a>
-      <button class="btn btn-sell" type="submit" style="flex:2;">カードを保存</button>
+  <form id="payment-form" method="post">
+    <input type="hidden" name="next_url"     value="{{ next_url }}">
+    <input type="hidden" name="stripe_pm_id" id="f_pm_id">
+    <input type="hidden" name="card_brand"   id="f_brand">
+    <input type="hidden" name="last4"        id="f_last4">
+    <input type="hidden" name="expiry_month" id="f_exp_month">
+    <input type="hidden" name="expiry_year"  id="f_exp_year">
+
+    <div class="form-group">
+      <label for="card_name">カード名義（ローマ字） <span class="required">*</span></label>
+      <input type="text" id="card_name" name="card_name"
+             placeholder="TARO YAMADA" autocomplete="cc-name" required
+             oninput="document.getElementById('prev-name').textContent = this.value || 'YOUR NAME'">
+    </div>
+
+    <div class="form-group">
+      <label>カード情報 <span class="required">*</span></label>
+      <div id="card-element" class="stripe-card-element"></div>
+      <p id="card-errors" class="stripe-card-error" role="alert"></p>
+    </div>
+
+    <div class="stripe-secure-row">
+      <span>🔒</span>
+      <span>カード番号はStripeが暗号化します。サーバーには届きません。</span>
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:20px;">
+      <a class="btn btn-outline" href="{{ next_url }}"
+         style="flex:1; text-align:center;">キャンセル</a>
+      <button id="submit-btn" class="btn btn-sell" type="submit" style="flex:2;">
+        <span id="btn-label">カードを保存</span>
+      </button>
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const PK = {{ stripe_public_key | tojson }};
+
+const BRAND_LABELS = {
+  visa:       '<span style="color:#1a1f71;font-weight:900;font-style:italic;font-size:18px;">VISA</span>',
+  mastercard: '<span style="font-size:22px;">🔴🟠</span>',
+  jcb:        '<span style="color:#003087;font-weight:900;font-size:15px;">JCB</span>',
+  amex:       '<span style="color:#2e77bc;font-weight:900;font-size:13px;">AMEX</span>',
+  discover:   '<span style="color:#e67e22;font-weight:900;font-size:13px;">DISCOVER</span>',
+  unionpay:   '<span style="color:#e00;font-weight:900;font-size:13px;">銀聯</span>',
+};
+
+const BRAND_COLORS = {
+  visa:       ['#1a1f71', '#4752c4'],
+  mastercard: ['#eb001b', '#f79e1b'],
+  jcb:        ['#003087', '#009f6b'],
+  amex:       ['#2e77bc', '#5a9fd4'],
+  discover:   ['#e67e22', '#f39c12'],
+  unionpay:   ['#cc0000', '#ee4444'],
+};
+
+function updateBrand(brand) {
+  const label = BRAND_LABELS[brand] || '💳';
+  document.getElementById('prev-brand').innerHTML = label;
+
+  const colors = BRAND_COLORS[brand];
+  const preview = document.getElementById('cardPreview');
+  if (colors) {
+    preview.style.background = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
+  } else {
+    preview.style.background = 'linear-gradient(135deg, #2d2a26 0%, #5a5248 100%)';
+  }
+}
+
+if (!PK) {
+  document.getElementById('payment-form').innerHTML =
+    '<div class="flash flash-error">Stripe 公開キーが設定されていません（.env を確認）</div>';
+} else {
+  const stripe   = Stripe(PK);
+  const elements = stripe.elements();
+  const card     = elements.create('card', {
+    hidePostalCode: true,
+    style: {
+      base: {
+        fontSize:        '15px',
+        color:           '#2d2a26',
+        fontFamily:      '"Hiragino Sans", "Meiryo", sans-serif',
+        iconColor:       '#8a8178',
+        '::placeholder': { color: '#aaa49e' },
+      },
+      invalid: { color: '#e84c3c', iconColor: '#e84c3c' },
+    },
+  });
+  card.mount('#card-element');
+
+  // ブランド検出・バリデーション表示
+  card.on('change', ({ brand, error, complete }) => {
+    updateBrand(brand);
+    const errEl = document.getElementById('card-errors');
+    errEl.textContent = error ? error.message : '';
+    if (complete) errEl.textContent = '';
+  });
+
+  // フォーム送信
+  document.getElementById('payment-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = document.getElementById('card_name').value.trim();
+    if (!name) {
+      document.getElementById('card-errors').textContent = 'カード名義を入力してください。';
+      return;
+    }
+
+    const btn   = document.getElementById('submit-btn');
+    const label = document.getElementById('btn-label');
+    btn.disabled  = true;
+    label.textContent = '処理中…';
+
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+      type: 'card',
+      card,
+      billing_details: { name },
+    });
+
+    if (error) {
+      document.getElementById('card-errors').textContent = error.message;
+      btn.disabled       = false;
+      label.textContent  = 'カードを保存';
+    } else {
+      const c = paymentMethod.card;
+      // プレビュー更新
+      document.getElementById('prev-last4').textContent  = c.last4;
+      document.getElementById('prev-expiry').textContent =
+        `${String(c.exp_month).padStart(2,'0')} / ${String(c.exp_year).slice(-2)}`;
+
+      // hidden field にセット
+      document.getElementById('f_pm_id').value     = paymentMethod.id;
+      document.getElementById('f_brand').value     = c.brand;
+      document.getElementById('f_last4').value     = c.last4;
+      document.getElementById('f_exp_month').value = c.exp_month;
+      document.getElementById('f_exp_year').value  = c.exp_year;
+      document.getElementById('payment-form').submit();
+    }
+  });
+}
+</script>
 {% endblock %}

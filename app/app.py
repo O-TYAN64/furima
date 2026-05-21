@@ -37,18 +37,19 @@ app.register_blueprint(account)
 
 with app.app_context():
     db.create_all()
-    # SQLite マイグレーション: 既存テーブルへの新規カラム追加
     from sqlalchemy import text, inspect
     inspector = inspect(db.engine)
+
     def _add_col(table, col, typedef):
-        existing = [c["name"] for c in inspector.get_columns(table)]
-        if col not in existing:
-            db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typedef}"))
-    try:
-        _add_col("user", "avatar_path", "VARCHAR(255)")
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
+        try:
+            cols = [c["name"] for c in inspector.get_columns(table)]
+            if col not in cols:
+                db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typedef}"))
+        except Exception:
+            db.session.rollback()
+
+    _add_col("user",    "avatar_path", "VARCHAR(255)")
+    db.session.commit()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=True)

@@ -9,14 +9,15 @@ from datetime import datetime
 class User(UserMixin, db.Model):
     __tablename__ = "user"
 
-    id           = db.Column(db.Integer, primary_key=True)
-    username     = db.Column(db.String(32), unique=True, nullable=False)
-    email        = db.Column(db.String(254), unique=True, nullable=False)
-    password     = db.Column(db.String(128), nullable=False)
-    display_name = db.Column(db.String(64), nullable=True)
-    bio          = db.Column(db.String(300), nullable=True)
-    avatar_path  = db.Column(db.String(255), nullable=True)
-    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    id                 = db.Column(db.Integer, primary_key=True)
+    username           = db.Column(db.String(32), unique=True, nullable=False)
+    email              = db.Column(db.String(254), unique=True, nullable=False)
+    password           = db.Column(db.String(128), nullable=False)
+    display_name       = db.Column(db.String(64), nullable=True)
+    bio                = db.Column(db.String(300), nullable=True)
+    avatar_path        = db.Column(db.String(255), nullable=True)
+    stripe_customer_id = db.Column(db.String(64), nullable=True)
+    created_at         = db.Column(db.DateTime, default=datetime.utcnow)
 
     items         = db.relationship("Item", back_populates="seller", foreign_keys="Item.seller_id")
     purchases     = db.relationship("Item", back_populates="buyer",  foreign_keys="Item.buyer_id")
@@ -59,20 +60,24 @@ class Address(db.Model):
 class Payment(db.Model):
     __tablename__ = "payment"
 
-    id           = db.Column(db.Integer, primary_key=True)
-    user_id      = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    card_name    = db.Column(db.String(64), nullable=False)
-    card_brand   = db.Column(db.String(20), nullable=False)
-    last4        = db.Column(db.String(4), nullable=False)
-    expiry_month = db.Column(db.Integer, nullable=False)
-    expiry_year  = db.Column(db.Integer, nullable=False)
-    is_default   = db.Column(db.Boolean, default=False)
-    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    id             = db.Column(db.Integer, primary_key=True)
+    user_id        = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    card_name      = db.Column(db.String(64), nullable=False)
+    card_brand     = db.Column(db.String(20), nullable=False)
+    last4          = db.Column(db.String(4), nullable=False)
+    expiry_month   = db.Column(db.Integer, nullable=False)
+    expiry_year    = db.Column(db.Integer, nullable=False)
+    stripe_pm_id   = db.Column(db.String(64), nullable=True)   # pm_xxxx
+    is_default     = db.Column(db.Boolean, default=False)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship("User", back_populates="payments")
 
     def expiry(self):
         return f"{self.expiry_month:02d}/{str(self.expiry_year)[-2:]}"
+
+    def is_stripe(self):
+        return bool(self.stripe_pm_id)
 
 
 class Notification(db.Model):

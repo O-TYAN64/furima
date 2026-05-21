@@ -808,6 +808,145 @@ img { max-width: 100%; display: block; }
 .img-upload-area:hover { border-color: var(--accent); background: #fff8f5; }
 .upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 
+/* ======================== Stripe ======================== */
+
+/* カードプレビュー */
+.card-preview {
+  background: linear-gradient(135deg, #2d2a26 0%, #5a5248 100%);
+  color: #fff;
+  border-radius: 18px;
+  padding: 24px 28px 20px;
+  margin-bottom: 28px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.22);
+  position: relative;
+  overflow: hidden;
+  transition: background .4s;
+  min-height: 168px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.card-preview::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 200px; height: 200px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+}
+.card-preview::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; left: -20px;
+  width: 220px; height: 220px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+}
+.card-preview-chip {
+  font-size: 22px;
+  letter-spacing: -4px;
+  opacity: .8;
+  margin-bottom: 20px;
+}
+.card-preview-number {
+  font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
+  font-size: 20px;
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.card-preview-bottom {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+.card-preview-holder { flex: 1; min-width: 0; }
+.card-preview-expiry { flex-shrink: 0; }
+.card-preview-brand-wrap { margin-left: auto; flex-shrink: 0; }
+.card-preview-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  opacity: .65;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.card-preview-holder > div:last-child,
+.card-preview-expiry > div:last-child {
+  font-family: "SFMono-Regular", "Consolas", monospace;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-brand-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 4px 10px;
+  backdrop-filter: blur(4px);
+  line-height: 1.4;
+}
+
+/* Stripe Elements */
+.stripe-card-element {
+  padding: 13px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color .2s;
+}
+.stripe-card-element.StripeElement--focus  { border-color: var(--accent); }
+.stripe-card-element.StripeElement--invalid:not(.StripeElement--empty) { border-color: var(--red); }
+
+.stripe-card-error {
+  color: var(--red);
+  font-size: 13px;
+  margin-top: 6px;
+  min-height: 18px;
+}
+.stripe-secure-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+
+.stripe-notice {
+  background: #f0f7ff;
+  border: 1px solid #c8dff7;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #2c5282;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stripe-lock { font-size: 16px; flex-shrink: 0; }
+
+.stripe-card-element {
+  padding: 13px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color .2s;
+}
+.stripe-card-element.StripeElement--focus { border-color: var(--accent); }
+.stripe-card-element.StripeElement--invalid { border-color: var(--red); }
+
+.stripe-card-error {
+  color: var(--red);
+  font-size: 13px;
+  margin-top: 6px;
+  min-height: 20px;
+}
+
 /* ======================== 郵便番号入力 ======================== */
 .postal-row { display: flex; gap: 10px; align-items: center; }
 .postal-row input { flex: 1; }

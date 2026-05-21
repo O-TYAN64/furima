@@ -2,7 +2,7 @@
 # routes/account.py
 # =========================
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 from extensions import db
 from models.user import Address, Payment
@@ -80,29 +80,23 @@ def add_payment():
     next_url = request.args.get("next") or url_for("account.payments")
 
     if request.method == "POST":
-        card_name    = request.form.get("card_name", "").strip()
-        card_brand   = request.form.get("card_brand", "").strip()
-        last4        = request.form.get("last4", "").strip()
-        expiry_month = request.form.get("expiry_month", "")
-        expiry_year  = request.form.get("expiry_year", "")
+        card_name     = request.form.get("card_name", "").strip()
+        card_brand    = request.form.get("card_brand", "").strip().capitalize()
+        last4         = request.form.get("last4", "").strip()
+        expiry_month  = request.form.get("expiry_month", "")
+        expiry_year   = request.form.get("expiry_year", "")
         next_url_form = request.form.get("next_url", next_url)
 
         if not all([card_name, card_brand, last4, expiry_month, expiry_year]):
-            flash("すべての項目を入力してください。", "error")
-            return render_template("account/add_payment.html", next_url=next_url_form)
+            flash("カード情報の取得に失敗しました。もう一度お試しください。", "error")
+            return redirect(url_for("account.add_payment", next=next_url_form))
 
         try:
             expiry_month = int(expiry_month)
             expiry_year  = int(expiry_year)
-            if not (1 <= expiry_month <= 12):
-                raise ValueError
         except ValueError:
             flash("有効期限の形式が正しくありません。", "error")
-            return render_template("account/add_payment.html", next_url=next_url_form)
-
-        if len(last4) != 4 or not last4.isdigit():
-            flash("カード番号下4桁は半角数字4文字で入力してください。", "error")
-            return render_template("account/add_payment.html", next_url=next_url_form)
+            return redirect(url_for("account.add_payment", next=next_url_form))
 
         pay = Payment(
             user_id      = current_user.id,
@@ -118,7 +112,9 @@ def add_payment():
         flash("支払い方法を追加しました。", "success")
         return redirect(next_url_form)
 
-    return render_template("account/add_payment.html", next_url=next_url)
+    stripe_public_key = current_app.config.get("STRIPE_PUBLIC_KEY", "")
+    return render_template("account/add_payment.html", next_url=next_url,
+                           stripe_public_key=stripe_public_key)
 
 
 @account.route("/payments")
