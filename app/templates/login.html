@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}ログイン{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-left">
+    <div class="auth-left-inner">
+      <span class="auth-logo">🛍</span>
+      <h2>ふりまへようこそ</h2>
+      <p>かんたん・安心・お得な<br>フリマアプリです</p>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-box">
+      <h1>ログイン</h1>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="post">
+        <div class="form-group">
+          <label>メールアドレス</label>
+          <input type="email" name="email" placeholder="example@mail.com" required>
+        </div>
+        <div class="form-group">
+          <label>パスワード</label>
+          <input type="password" name="password" placeholder="パスワードを入力" required>
+        </div>
+        <button class="btn btn-buy full-w" type="submit">ログイン</button>
+      </form>
+
+      <p class="auth-switch">アカウントをお持ちでない方は
+        <a href="{{ url_for('auth.register') }}">新規登録</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

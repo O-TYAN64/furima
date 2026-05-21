@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}商品を編集{% endblock %}
+
+{% block content %}
+<div class="inner form-page">
+  <h1 class="page-title">商品情報を編集</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form class="sell-form" method="post" enctype="multipart/form-data">
+    <!-- 画像アップロード -->
+    <div class="form-group">
+      <label>商品画像</label>
+      <div class="img-upload-area" id="uploadArea">
+        <input type="file" name="image" id="imageInput" accept="image/*" hidden>
+        <div class="upload-placeholder" id="uploadPlaceholder"
+             {% if item.image_path %}style="display:none"{% endif %}>
+          <span class="upload-icon">📷</span>
+          <p>クリックして画像を変更</p>
+          <p class="upload-hint">PNG / JPG / GIF（16MB以内）</p>
+        </div>
+        <img id="preview"
+             src="{% if item.image_path %}{{ url_for('static', filename=item.image_path) }}{% endif %}"
+             alt="" style="{% if not item.image_path %}display:none;{% endif %} max-height:300px; border-radius:12px;">
+      </div>
+    </div>
+
+    <!-- 商品名 -->
+    <div class="form-group">
+      <label for="title">商品名 <span class="required">*</span></label>
+      <input type="text" id="title" name="title" maxlength="100"
+             value="{{ item.title }}" required>
+    </div>
+
+    <!-- カテゴリ -->
+    <div class="form-group">
+      <label for="category">カテゴリ <span class="required">*</span></label>
+      <select id="category" name="category" required>
+        {% for cat in categories %}
+          <option value="{{ cat }}" {% if item.category == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- 状態 -->
+    <div class="form-group">
+      <label for="condition">商品の状態</label>
+      <select id="condition" name="condition">
+        {% for cond in conditions %}
+          <option value="{{ cond }}" {% if item.condition == cond %}selected{% endif %}>{{ cond }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- 価格 -->
+    <div class="form-group">
+      <label for="price">販売価格 <span class="required">*</span></label>
+      <div class="price-input-wrap">
+        <span class="yen-sign">¥</span>
+        <input type="number" id="price" name="price" min="300" max="9999999"
+               value="{{ item.price }}" required>
+      </div>
+      <p class="form-hint">最低出品価格 ¥300</p>
+    </div>
+
+    <!-- 説明文 -->
+    <div class="form-group">
+      <label for="description">商品の説明</label>
+      <textarea id="description" name="description" rows="6">{{ item.description or '' }}</textarea>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <a class="btn btn-outline" href="{{ url_for('main.item_detail', item_id=item.id) }}"
+         style="flex:1; text-align:center;">キャンセル</a>
+      <button class="btn btn-sell" type="submit" style="flex:2;">更新する</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const area = document.getElementById('uploadArea');
+const input = document.getElementById('imageInput');
+const placeholder = document.getElementById('uploadPlaceholder');
+const preview = document.getElementById('preview');
+
+area.addEventListener('click', () => input.click());
+
+input.addEventListener('change', () => {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    placeholder.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+});
+</script>
+{% endblock %}

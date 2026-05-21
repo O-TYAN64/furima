@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}カードを追加{% endblock %}
+
+{% block content %}
+<div class="inner form-page">
+  <h1 class="page-title">支払い方法を追加</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for category, message in messages %}
+      <div class="flash flash-{{ category }}">{{ message }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <form method="post">
+    <input type="hidden" name="next_url" value="{{ next_url }}">
+
+    <div class="form-group">
+      <label>カードブランド <span class="required">*</span></label>
+      <select name="card_brand" required>
+        <option value="">選択してください</option>
+        <option value="Visa">Visa</option>
+        <option value="Mastercard">Mastercard</option>
+        <option value="JCB">JCB</option>
+        <option value="AmericanExpress">American Express</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>カード番号下4桁 <span class="required">*</span></label>
+      <input type="text" name="last4" maxlength="4" placeholder="1234" pattern="\d{4}" required>
+    </div>
+    <div class="form-group">
+      <label>カード名義（ローマ字） <span class="required">*</span></label>
+      <input type="text" name="card_name" placeholder="TARO YAMADA" required>
+    </div>
+    <div class="form-group">
+      <label>有効期限 <span class="required">*</span></label>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <select name="expiry_month" required>
+          <option value="">月</option>
+          {% for m in range(1,13) %}
+            <option value="{{ m }}">{{ "%02d"|format(m) }}</option>
+          {% endfor %}
+        </select>
+        <span>/</span>
+        <select name="expiry_year" required>
+          <option value="">年</option>
+          {% for y in range(2025, 2036) %}
+            <option value="{{ y }}">{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <a class="btn btn-outline" href="{{ next_url }}" style="flex:1; text-align:center;">キャンセル</a>
+      <button class="btn btn-sell" type="submit" style="flex:2;">カードを保存</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}出品する{% endblock %}
+
+{% block content %}
+<div class="inner form-page">
+  <h1 class="page-title">商品を出品する</h1>
+
+  <form class="sell-form" method="post" enctype="multipart/form-data">
+
+    <!-- 複数画像アップロード -->
+    <div class="form-group">
+      <label>商品画像（最大4枚）</label>
+      <div class="multi-upload-area" id="uploadArea">
+        <input type="file" name="images" id="imageInput"
+               accept="image/*" multiple hidden>
+        <div class="multi-upload-placeholder" id="uploadPlaceholder">
+          <span class="upload-icon">📷</span>
+          <p>クリックして画像を追加</p>
+          <p class="upload-hint">PNG / JPG / GIF（各16MB以内・最大4枚）</p>
+        </div>
+        <div class="preview-grid" id="previewGrid"></div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="title">商品名 <span class="required">*</span></label>
+      <input type="text" id="title" name="title" maxlength="100"
+             placeholder="例：ナイキ スニーカー 27cm" required>
+    </div>
+
+    <div class="form-group">
+      <label for="category">カテゴリ <span class="required">*</span></label>
+      <select id="category" name="category" required>
+        <option value="">選択してください</option>
+        {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="condition">商品の状態</label>
+      <select id="condition" name="condition">
+        {% for cond in conditions %}
+          <option value="{{ cond }}">{{ cond }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="price">販売価格 <span class="required">*</span></label>
+      <div class="price-input-wrap">
+        <span class="yen-sign">¥</span>
+        <input type="number" id="price" name="price" min="300" max="9999999"
+               placeholder="300以上" required>
+      </div>
+      <p class="form-hint">手数料：10%（サービス手数料） / 最低出品価格 ¥300</p>
+    </div>
+
+    <div class="form-group">
+      <label for="description">商品の説明</label>
+      <textarea id="description" name="description" rows="6"
+                placeholder="商品の詳細、サイズ、使用歴などを書いてください…"></textarea>
+    </div>
+
+    <button class="btn btn-sell full-w" type="submit">出品する</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const area        = document.getElementById('uploadArea');
+const input       = document.getElementById('imageInput');
+const placeholder = document.getElementById('uploadPlaceholder');
+const grid        = document.getElementById('previewGrid');
+const MAX = 4;
+
+area.addEventListener('click', e => {
+  if (!e.target.closest('.preview-remove')) input.click();
+});
+
+input.addEventListener('change', () => {
+  const files = Array.from(input.files).slice(0, MAX);
+  grid.innerHTML = '';
+  if (files.length) placeholder.style.display = 'none';
+  else              placeholder.style.display = '';
+  files.forEach((f, i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preview-thumb';
+      wrap.innerHTML = `
+        <img src="${e.target.result}" alt="">
+        ${i === 0 ? '<span class="preview-main-badge">メイン</span>' : ''}
+      `;
+      grid.appendChild(wrap);
+    };
+    reader.readAsDataURL(f);
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user.get_display_name() }} のプロフィール{% endblock %}
+
+{% block content %}
+<div class="inner">
+  <!-- プロフィールヘッダー -->
+  <div class="profile-header">
+    {% if profile_user.avatar_path %}
+      <img class="profile-avatar"
+           src="{{ url_for('static', filename=profile_user.avatar_path) }}" alt="">
+    {% else %}
+      <div class="profile-avatar profile-avatar-letter">
+        {{ profile_user.get_display_name()[0] }}
+      </div>
+    {% endif %}
+    <div class="profile-info">
+      <h1 class="profile-name">{{ profile_user.get_display_name() }}</h1>
+      <p class="profile-username">@{{ profile_user.username }}</p>
+      <div class="profile-stats">
+        <span class="profile-stat">
+          <strong>{{ items|length }}</strong> 出品中
+        </span>
+        <span class="profile-stat">
+          <strong>{{ sold_count }}</strong> 販売実績
+        </span>
+        <span class="profile-stat">
+          <strong>{{ profile_user.created_at.strftime('%Y年%m月') }}</strong> から利用
+        </span>
+      </div>
+      {% if profile_user.bio %}
+        <p class="profile-bio">{{ profile_user.bio }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 出品中の商品 -->
+  <h2 class="section-title" style="margin-top:32px;">
+    出品中の商品
+    <span class="comment-count-badge">{{ items|length }}</span>
+  </h2>
+
+  {% if items %}
+    <div class="item-grid">
+      {% for item in items %}
+        <a class="item-card" href="{{ url_for('main.item_detail', item_id=item.id) }}">
+          <div class="card-img-wrap">
+            {% if item.image_path %}
+              <img src="{{ url_for('static', filename=item.image_path) }}"
+                   alt="{{ item.title }}" loading="lazy">
+            {% else %}
+              <div class="card-no-img">📦</div>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <p class="card-title">{{ item.title }}</p>
+            <p class="card-price">¥{{ "{:,}".format(item.price) }}</p>
+            <div class="card-meta">
+              <span class="card-like">♡ {{ item.like_count() }}</span>
+              <span class="card-cat">{{ item.category }}</span>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📦</div>
+      <p>出品中の商品はありません</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

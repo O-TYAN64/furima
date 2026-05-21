@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}住所一覧{% endblock %}
+
+{% block content %}
+<div class="inner form-page">
+  <h1 class="page-title">登録済みの住所</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for category, message in messages %}
+      <div class="flash flash-{{ category }}">{{ message }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  {% if addresses %}
+    {% for addr in addresses %}
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          {% if addr.is_default %}<span class="default-badge" style="margin-bottom:8px; display:inline-block;">デフォルト</span>{% endif %}
+          <p><strong>{{ addr.recipient_name }}</strong>（{{ addr.label }}）</p>
+          <p>〒{{ addr.postal_code }}</p>
+          <p>{{ addr.full_address() }}</p>
+          <p>📞 {{ addr.phone }}</p>
+        </div>
+        <form method="post" action="{{ url_for('account.delete_address', addr_id=addr.id) }}"
+              onsubmit="return confirm('この住所を削除しますか？')">
+          <button class="btn btn-danger" type="submit" style="font-size:.8rem; padding:6px 12px;">削除</button>
+        </form>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state"><p>住所が登録されていません</p></div>
+  {% endif %}
+
+  <a class="btn btn-sell" href="{{ url_for('account.add_address') }}">＋ 住所を追加</a>
+</div>
+{% endblock %}

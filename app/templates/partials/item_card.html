@@ -1,0 +1,21 @@
+<a class="item-card {% if item.status == 'sold' %}sold{% endif %}"
+   href="{{ url_for('main.item_detail', item_id=item.id) }}">
+  <div class="card-img-wrap">
+    {% if item.image_path %}
+      <img src="{{ url_for('static', filename=item.image_path) }}" alt="{{ item.title }}">
+    {% else %}
+      <div class="card-no-img">📦</div>
+    {% endif %}
+    {% if item.status == 'sold' %}
+      <div class="sold-badge">SOLD</div>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <p class="card-title">{{ item.title }}</p>
+    <p class="card-price">¥{{ "{:,}".format(item.price) }}</p>
+    <div class="card-meta">
+      <span class="card-like">♡ {{ item.like_count() }}</span>
+      <span class="card-cat">{{ item.category }}</span>
+    </div>
+  </div>
+</a>

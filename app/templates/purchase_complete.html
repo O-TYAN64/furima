@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}ご注文ありがとうございます{% endblock %}
+
+{% block content %}
+<div class="inner complete-page">
+  <div class="complete-box">
+    <div class="complete-icon">🎉</div>
+    <h1>ご注文ありがとうございます！</h1>
+    <p class="complete-order-num">注文番号：<strong>#{{ "%06d" % item.id }}</strong></p>
+
+    <div class="order-detail-card">
+      <div class="od-row">
+        <span class="od-label">商品</span>
+        <span class="od-value">{{ item.title }}</span>
+      </div>
+      <div class="od-row">
+        <span class="od-label">金額</span>
+        <span class="od-value">¥{{ "{:,}".format(item.price) }}</span>
+      </div>
+      <div class="od-row">
+        <span class="od-label">商品状態</span>
+        <span class="od-value">{{ item.condition }}</span>
+      </div>
+      <div class="od-row">
+        <span class="od-label">出品者</span>
+        <span class="od-value">{{ item.seller.get_display_name() }}</span>
+      </div>
+      <div class="od-row">
+        <span class="od-label">購入日時</span>
+        <span class="od-value">{{ item.sold_at.strftime('%Y/%m/%d %H:%M') }}</span>
+      </div>
+    </div>
+
+    <div class="complete-actions">
+      <a class="btn btn-outline" href="{{ url_for('main.mypage') }}">マイページへ</a>
+      <a class="btn btn-sell" href="{{ url_for('main.index') }}">引き続きお買い物</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

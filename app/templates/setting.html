@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}アカウント設定{% endblock %}
+
+{% block content %}
+<div class="inner settings-wrap">
+  <h1 class="page-title">アカウント設定</h1>
+
+  <div class="settings-grid">
+    <!-- プロフィール編集 -->
+    <div class="settings-card" style="cursor:default; flex-direction:column; align-items:flex-start;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px; width:100%;">
+        <div class="settings-card-icon">👤</div>
+        <div class="settings-card-body">
+          <h3>プロフィール編集</h3>
+          <p>アバター・表示名・自己紹介を変更できます</p>
+        </div>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" style="width:100%;">
+        <!-- アバター -->
+        <div class="form-group">
+          <label>プロフィール写真</label>
+          <div class="avatar-upload-row">
+            {% if current_user.avatar_path %}
+              <img class="avatar-preview" id="avatarPreview"
+                   src="{{ url_for('static', filename=current_user.avatar_path) }}" alt="">
+            {% else %}
+              <div class="avatar-preview avatar-preview-letter" id="avatarPreviewLetter">
+                {{ current_user.get_display_name()[0] }}
+              </div>
+              <img class="avatar-preview" id="avatarPreview" src="" alt="" style="display:none;">
+            {% endif %}
+            <div>
+              <input type="file" name="avatar" id="avatarInput" accept="image/*" hidden>
+              <button type="button" class="btn btn-outline"
+                      onclick="document.getElementById('avatarInput').click()">
+                写真を変更
+              </button>
+              <p class="form-hint" style="margin-top:6px;">PNG / JPG（16MB以内）</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>表示名</label>
+          <input type="text" name="display_name" maxlength="64"
+                 value="{{ current_user.get_display_name() }}" placeholder="表示名を入力">
+        </div>
+        <div class="form-group">
+          <label>自己紹介</label>
+          <textarea name="bio" rows="3" maxlength="300"
+                    placeholder="自己紹介を入力（300文字以内）">{{ current_user.bio or '' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label>ユーザー名</label>
+          <input type="text" value="@{{ current_user.username }}" disabled style="opacity:.6;">
+        </div>
+        <div class="form-group">
+          <label>メールアドレス</label>
+          <input type="text" value="{{ current_user.email }}" disabled style="opacity:.6;">
+        </div>
+        <button class="btn btn-sell" type="submit">プロフィールを更新</button>
+      </form>
+    </div>
+
+    <!-- 住所管理 -->
+    <a class="settings-card" href="{{ url_for('account.addresses') }}">
+      <div class="settings-card-icon">📬</div>
+      <div class="settings-card-body">
+        <h3>住所管理</h3>
+        <p>登録住所：<span class="settings-card-count">{{ current_user.addresses|length }}</span> 件</p>
+      </div>
+      <span class="settings-arrow">›</span>
+    </a>
+
+    <!-- 支払い方法 -->
+    <a class="settings-card" href="{{ url_for('account.payments') }}">
+      <div class="settings-card-icon">💳</div>
+      <div class="settings-card-body">
+        <h3>支払い方法</h3>
+        <p>登録カード：<span class="settings-card-count">{{ current_user.payments|length }}</span> 枚</p>
+      </div>
+      <span class="settings-arrow">›</span>
+    </a>
+
+    <!-- マイページ -->
+    <a class="settings-card" href="{{ url_for('main.mypage') }}">
+      <div class="settings-card-icon">🛍</div>
+      <div class="settings-card-body">
+        <h3>マイページ</h3>
+        <p>出品・購入履歴の確認</p>
+      </div>
+      <span class="settings-arrow">›</span>
+    </a>
+
+    <!-- ログアウト -->
+    <a class="settings-card" href="{{ url_for('auth.logout') }}" style="color:var(--red);">
+      <div class="settings-card-icon">🚪</div>
+      <div class="settings-card-body">
+        <h3>ログアウト</h3>
+        <p>アカウントからログアウトします</p>
+      </div>
+      <span class="settings-arrow">›</span>
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('avatarInput').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('avatarPreview');
+    const letter  = document.getElementById('avatarPreviewLetter');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    if (letter) letter.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+});
+</script>
+{% endblock %}

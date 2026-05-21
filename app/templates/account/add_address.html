@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}住所を追加{% endblock %}
+
+{% block content %}
+<div class="inner form-page">
+  <h1 class="page-title">住所を追加</h1>
+
+  <form method="post">
+    <input type="hidden" name="next_url" value="{{ next_url }}">
+
+    <div class="form-group">
+      <label>ラベル</label>
+      <select name="label">
+        <option value="自宅">自宅</option>
+        <option value="会社">会社</option>
+        <option value="その他" selected>その他</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>お名前 <span class="required">*</span></label>
+      <input type="text" name="recipient_name" placeholder="山田 太郎" required>
+    </div>
+
+    <!-- 郵便番号 + 自動入力ボタン -->
+    <div class="form-group">
+      <label>郵便番号 <span class="required">*</span></label>
+      <div class="postal-row">
+        <input type="text" name="postal_code" id="postalCode"
+               placeholder="1234567（ハイフンなし）"
+               maxlength="8" required>
+        <button type="button" class="btn btn-outline postal-lookup-btn"
+                id="postalLookup">住所を自動入力</button>
+      </div>
+      <p class="form-hint" id="postalStatus"></p>
+    </div>
+
+    <div class="form-group">
+      <label>都道府県 <span class="required">*</span></label>
+      <input type="text" name="prefecture" id="prefecture" placeholder="東京都" required>
+    </div>
+    <div class="form-group">
+      <label>市区町村 <span class="required">*</span></label>
+      <input type="text" name="city" id="city" placeholder="渋谷区" required>
+    </div>
+    <div class="form-group">
+      <label>番地・建物名 <span class="required">*</span></label>
+      <input type="text" name="street" id="street"
+             placeholder="1-2-3 ○○マンション101" required>
+    </div>
+    <div class="form-group">
+      <label>電話番号 <span class="required">*</span></label>
+      <input type="tel" name="phone" placeholder="090-1234-5678" required>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <a class="btn btn-outline" href="{{ next_url }}" style="flex:1; text-align:center;">キャンセル</a>
+      <button class="btn btn-sell" type="submit" style="flex:2;">住所を保存</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('postalLookup').addEventListener('click', async () => {
+  const raw    = document.getElementById('postalCode').value.replace(/[^0-9]/g, '');
+  const status = document.getElementById('postalStatus');
+  if (raw.length !== 7) {
+    status.textContent = '7桁の数字で入力してください';
+    status.style.color = 'var(--red)';
+    return;
+  }
+  status.textContent = '検索中…';
+  status.style.color = 'var(--muted)';
+  try {
+    const res  = await fetch(`https://zipcloud.ibsreg.com/api/search?zipcode=${raw}`);
+    const data = await res.json();
+    if (data.results && data.results[0]) {
+      const r = data.results[0];
+      document.getElementById('prefecture').value = r.address1;
+      document.getElementById('city').value       = r.address2 + r.address3;
+      document.getElementById('street').focus();
+      status.textContent = '✓ 住所を自動入力しました';
+      status.style.color = 'var(--green)';
+    } else {
+      status.textContent = '該当する住所が見つかりませんでした';
+      status.style.color = 'var(--red)';
+    }
+  } catch {
+    status.textContent = '通信エラーが発生しました';
+    status.style.color = 'var(--red)';
+  }
+});
+
+// ハイフン入力を自動除去
+document.getElementById('postalCode').addEventListener('input', function() {
+  this.value = this.value.replace(/[^0-9\-]/g, '');
+});
+</script>
+{% endblock %}

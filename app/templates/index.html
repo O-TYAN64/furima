@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}トップ{% endblock %}
+
+{% block content %}
+<!-- ヒーロー -->
+<section class="hero">
+  <div class="hero-inner">
+    <h1 class="hero-title">あなたの不用品を<br><em>誰かの宝物</em>に。</h1>
+    <p class="hero-sub">かんたん・安心・お得なフリマアプリ</p>
+    {% if not current_user.is_authenticated %}
+      <a class="btn btn-hero" href="{{ url_for('auth.register') }}">無料で始める</a>
+    {% else %}
+      <a class="btn btn-hero" href="{{ url_for('main.sell') }}">さっそく出品する</a>
+    {% endif %}
+  </div>
+</section>
+
+<!-- カテゴリバー -->
+<section class="category-bar">
+  <div class="inner">
+    <a class="cat-chip {% if not selected_category %}active{% endif %}"
+       href="{{ url_for('main.index', q=q, sort=selected_sort, show_sold=show_sold) }}">すべて</a>
+    {% for cat in categories %}
+      <a class="cat-chip {% if selected_category == cat %}active{% endif %}"
+         href="{{ url_for('main.index', category=cat, q=q, sort=selected_sort, show_sold=show_sold) }}">{{ cat }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- 絞り込み・ソート -->
+<section class="list-header inner">
+  <div class="list-header-left">
+    <p class="result-count">
+      {% if q %}<span class="q-label">「{{ q }}」</span> の検索結果：{% endif %}
+      <strong>{{ pagination.total }}</strong> 件
+    </p>
+    <a class="sold-toggle {% if show_sold == '1' %}active{% endif %}"
+       href="{{ url_for('main.index', category=selected_category, q=q, sort=selected_sort,
+                        price_min=price_min, price_max=price_max,
+                        show_sold=('0' if show_sold=='1' else '1')) }}">
+      {% if show_sold == '1' %}✅ 売り切れを含む{% else %}☐ 売り切れを含む{% endif %}
+    </a>
+
+    <!-- 価格フィルター -->
+    <form class="price-filter-form" method="get" action="{{ url_for('main.index') }}">
+      <input type="hidden" name="q" value="{{ q }}">
+      <input type="hidden" name="category" value="{{ selected_category }}">
+      <input type="hidden" name="sort" value="{{ selected_sort }}">
+      <input type="hidden" name="show_sold" value="{{ show_sold }}">
+      <span class="price-filter-label">価格</span>
+      <input class="price-filter-input" type="number" name="price_min" placeholder="下限"
+             value="{{ price_min }}" min="0">
+      <span class="price-filter-sep">〜</span>
+      <input class="price-filter-input" type="number" name="price_max" placeholder="上限"
+             value="{{ price_max }}" min="0">
+      <button class="price-filter-btn" type="submit">絞込</button>
+      {% if price_min or price_max %}
+        <a class="price-filter-clear"
+           href="{{ url_for('main.index', q=q, category=selected_category, sort=selected_sort, show_sold=show_sold) }}">×</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="sort-tabs">
+    <a class="sort-tab {% if selected_sort=='new' %}active{% endif %}"
+       href="{{ url_for('main.index', category=selected_category, q=q, sort='new',
+                        show_sold=show_sold, price_min=price_min, price_max=price_max) }}">新着順</a>
+    <a class="sort-tab {% if selected_sort=='popular' %}active{% endif %}"
+       href="{{ url_for('main.index', category=selected_category, q=q, sort='popular',
+                        show_sold=show_sold, price_min=price_min, price_max=price_max) }}">人気順</a>
+    <a class="sort-tab {% if selected_sort=='price_asc' %}active{% endif %}"
+       href="{{ url_for('main.index', category=selected_category, q=q, sort='price_asc',
+                        show_sold=show_sold, price_min=price_min, price_max=price_max) }}">安い順</a>
+    <a class="sort-tab {% if selected_sort=='price_desc' %}active{% endif %}"
+       href="{{ url_for('main.index', category=selected_category, q=q, sort='price_desc',
+                        show_sold=show_sold, price_min=price_min, price_max=price_max) }}">高い順</a>
+  </div>
+</section>
+
+<!-- 商品グリッド -->
+<section class="inner">
+  {% if items %}
+    <div class="item-grid">
+      {% for item in items %}
+        <a class="item-card {% if item.status == 'sold' %}sold{% endif %}"
+           href="{{ url_for('main.item_detail', item_id=item.id) }}">
+          <div class="card-img-wrap">
+            {% if item.image_path %}
+              <img src="{{ url_for('static', filename=item.image_path) }}" alt="{{ item.title }}" loading="lazy">
+            {% else %}
+              <div class="card-no-img">📦</div>
+            {% endif %}
+            {% if item.status == 'sold' %}
+              <div class="sold-badge">SOLD</div>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <p class="card-title">{{ item.title }}</p>
+            <p class="card-price {% if item.status == 'sold' %}sold-price{% endif %}">
+              ¥{{ "{:,}".format(item.price) }}
+            </p>
+            <div class="card-meta">
+              <span class="card-like">♡ {{ item.like_count() }}</span>
+              <span class="card-cat">{{ item.category }}</span>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+
+    <!-- ページネーション -->
+    {% if pagination.pages > 1 %}
+    <nav class="pagination">
+      {% if pagination.has_prev %}
+        <a class="page-btn" href="{{ url_for('main.index', page=pagination.prev_num,
+           category=selected_category, q=q, sort=selected_sort,
+           show_sold=show_sold, price_min=price_min, price_max=price_max) }}">‹ 前へ</a>
+      {% else %}
+        <span class="page-btn disabled">‹ 前へ</span>
+      {% endif %}
+
+      {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if p %}
+          {% if p == pagination.page %}
+            <span class="page-btn current">{{ p }}</span>
+          {% else %}
+            <a class="page-btn" href="{{ url_for('main.index', page=p,
+               category=selected_category, q=q, sort=selected_sort,
+               show_sold=show_sold, price_min=price_min, price_max=price_max) }}">{{ p }}</a>
+          {% endif %}
+        {% else %}
+          <span class="page-ellipsis">…</span>
+        {% endif %}
+      {% endfor %}
+
+      {% if pagination.has_next %}
+        <a class="page-btn" href="{{ url_for('main.index', page=pagination.next_num,
+           category=selected_category, q=q, sort=selected_sort,
+           show_sold=show_sold, price_min=price_min, price_max=price_max) }}">次へ ›</a>
+      {% else %}
+        <span class="page-btn disabled">次へ ›</span>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <p>商品が見つかりませんでした</p>
+      {% if q or selected_category or show_sold == '1' or price_min or price_max %}
+        <a class="btn btn-outline" href="{{ url_for('main.index') }}">すべての商品を見る</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

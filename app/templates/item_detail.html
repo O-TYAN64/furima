@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }}{% endblock %}
+
+{% block content %}
+<div class="inner detail-wrap">
+  <!-- 商品画像ギャラリー -->
+  <div class="detail-img-col">
+    {% set all_imgs = item.all_images() %}
+    {% if all_imgs %}
+      <div class="gallery">
+        <div class="gallery-main">
+          <img id="gallery-main-img"
+               src="{{ url_for('static', filename=all_imgs[0]) }}"
+               alt="{{ item.title }}">
+          {% if item.status == 'sold' %}
+            <div class="gallery-sold-overlay">SOLD</div>
+          {% endif %}
+        </div>
+        {% if all_imgs|length > 1 %}
+          <div class="gallery-thumbs">
+            {% for img_path in all_imgs %}
+              <button class="thumb-btn {% if loop.first %}active{% endif %}"
+                      data-src="{{ url_for('static', filename=img_path) }}"
+                      onclick="switchImage(this)">
+                <img src="{{ url_for('static', filename=img_path) }}" alt="">
+              </button>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="detail-img-box">
+        <div class="detail-no-img">📦</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- 商品情報 -->
+  <div class="detail-info-col">
+    <p class="detail-category">{{ item.category }}</p>
+    <h1 class="detail-title">{{ item.title }}</h1>
+
+    <div class="detail-price-row">
+      <span class="detail-price">¥{{ "{:,}".format(item.price) }}</span>
+      <button class="like-btn {% if item.is_liked_by(current_user) %}liked{% endif %}"
+              data-id="{{ item.id }}"
+              {% if not current_user.is_authenticated %}
+                onclick="location.href='{{ url_for('auth.login') }}'; return false;"
+              {% endif %}>
+        <span class="like-icon">{% if item.is_liked_by(current_user) %}♥{% else %}♡{% endif %}</span>
+        <span class="like-count">{{ item.like_count() }}</span>
+      </button>
+    </div>
+
+    {% if item.status == "sold" %}
+      <div class="sold-badge-large">SOLD</div>
+    {% endif %}
+
+    <table class="detail-table">
+      <tr><th>商品の状態</th><td>{{ item.condition }}</td></tr>
+      <tr>
+        <th>出品者</th>
+        <td>
+          <a class="seller-link" href="{{ url_for('main.user_profile', username=item.seller.username) }}">
+            {% if item.seller.avatar_path %}
+              <img class="seller-mini-avatar" src="{{ url_for('static', filename=item.seller.avatar_path) }}" alt="">
+            {% else %}
+              <span class="seller-mini-avatar seller-mini-letter">{{ item.seller.get_display_name()[0] }}</span>
+            {% endif %}
+            {{ item.seller.get_display_name() }}
+          </a>
+        </td>
+      </tr>
+      <tr><th>出品日</th><td>{{ item.created_at.strftime('%Y/%m/%d') }}</td></tr>
+      <tr><th>コメント</th><td>{{ item.comments|length }} 件</td></tr>
+    </table>
+
+    {% if item.description %}
+      <div class="detail-desc">
+        <h3>商品説明</h3>
+        <p>{{ item.description | e | replace('\n', '<br>') | safe }}</p>
+      </div>
+    {% endif %}
+
+    {% if item.status == "selling" %}
+      {% if current_user.is_authenticated %}
+        {% if item.seller_id == current_user.id %}
+          <div class="own-item-msg">あなたが出品中の商品です</div>
+          <a class="btn btn-outline full-w" style="margin-bottom:8px;"
+             href="{{ url_for('main.edit_item', item_id=item.id) }}">商品情報を編集</a>
+          <form method="post" action="{{ url_for('main.delete_item', item_id=item.id) }}"
+                onsubmit="return confirm('本当に削除しますか？')">
+            <button class="btn btn-danger full-w">出品を取り消す</button>
+          </form>
+        {% else %}
+          <a class="btn btn-buy full-w" href="{{ url_for('main.checkout', item_id=item.id) }}">
+            ¥{{ "{:,}".format(item.price) }} で購入手続きへ
+          </a>
+        {% endif %}
+      {% else %}
+        <a class="btn btn-buy full-w" href="{{ url_for('auth.login') }}">ログインして購入する</a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- コメント欄 -->
+<section class="inner comments-section" id="comments">
+  <h2 class="section-title">コメント <span class="comment-count-badge">{{ item.comments|length }}</span></h2>
+
+  <!-- コメント投稿フォーム -->
+  {% if current_user.is_authenticated %}
+    <form class="comment-form" method="post" action="{{ url_for('main.add_comment', item_id=item.id) }}">
+      <div class="comment-form-inner">
+        {% if current_user.avatar_path %}
+          <img class="comment-avatar" src="{{ url_for('static', filename=current_user.avatar_path) }}" alt="">
+        {% else %}
+          <span class="comment-avatar comment-avatar-letter">{{ current_user.get_display_name()[0] }}</span>
+        {% endif %}
+        <div class="comment-input-wrap">
+          <textarea name="body" rows="3" maxlength="500"
+                    placeholder="商品についての質問・コメントを書く…"></textarea>
+          <div class="comment-form-foot">
+            <span class="comment-hint">最大500文字</span>
+            <button class="btn btn-sell" type="submit">送信</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  {% else %}
+    <div class="comment-login-prompt">
+      <a href="{{ url_for('auth.login') }}">ログイン</a>してコメントする
+    </div>
+  {% endif %}
+
+  <!-- コメント一覧 -->
+  {% if item.comments %}
+    <div class="comment-list">
+      {% for c in item.comments %}
+        <div class="comment-item">
+          <a class="comment-user-link" href="{{ url_for('main.user_profile', username=c.user.username) }}">
+            {% if c.user.avatar_path %}
+              <img class="comment-avatar" src="{{ url_for('static', filename=c.user.avatar_path) }}" alt="">
+            {% else %}
+              <span class="comment-avatar comment-avatar-letter">{{ c.user.get_display_name()[0] }}</span>
+            {% endif %}
+          </a>
+          <div class="comment-body-wrap">
+            <div class="comment-meta">
+              <a class="comment-username" href="{{ url_for('main.user_profile', username=c.user.username) }}">
+                {{ c.user.get_display_name() }}
+              </a>
+              {% if c.user.username == item.seller.username %}
+                <span class="seller-badge">出品者</span>
+              {% endif %}
+              <span class="comment-date">{{ c.created_at.strftime('%Y/%m/%d %H:%M') }}</span>
+            </div>
+            <p class="comment-text">{{ c.body | e | replace('\n', '<br>') | safe }}</p>
+            {% if current_user.is_authenticated and
+               (c.user_id == current_user.id or item.seller_id == current_user.id) %}
+              <form method="post"
+                    action="{{ url_for('main.delete_comment', item_id=item.id, comment_id=c.id) }}"
+                    onsubmit="return confirm('削除しますか？')">
+                <button class="comment-delete-btn">削除</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="comment-empty">まだコメントはありません。最初のコメントを書いてみましょう！</div>
+  {% endif %}
+</section>
+
+<!-- 関連商品 -->
+{% if related %}
+<section class="inner related-section">
+  <h2 class="section-title">同じカテゴリの商品</h2>
+  <div class="item-grid">
+    {% for r in related %}
+      <a class="item-card" href="{{ url_for('main.item_detail', item_id=r.id) }}">
+        <div class="card-img-wrap">
+          {% if r.image_path %}
+            <img src="{{ url_for('static', filename=r.image_path) }}" alt="{{ r.title }}" loading="lazy">
+          {% else %}
+            <div class="card-no-img">📦</div>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <p class="card-title">{{ r.title }}</p>
+          <p class="card-price">¥{{ "{:,}".format(r.price) }}</p>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchImage(btn) {
+  const src = btn.dataset.src;
+  document.getElementById('gallery-main-img').src = src;
+  document.querySelectorAll('.thumb-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+</script>
+{% endblock %}

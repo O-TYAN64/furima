@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}支払い方法一覧{% endblock %}
+
+{% block content %}
+<div class="inner form-page">
+  <h1 class="page-title">登録済みの支払い方法</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for category, message in messages %}
+      <div class="flash flash-{{ category }}">{{ message }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  {% if payments %}
+    {% for pay in payments %}
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          {% if pay.is_default %}<span class="default-badge" style="margin-bottom:8px; display:inline-block;">デフォルト</span>{% endif %}
+          <p><strong>{{ pay.card_brand }}</strong> **** **** **** {{ pay.last4 }}</p>
+          <p>有効期限：{{ pay.expiry() }}</p>
+          <p>名義：{{ pay.card_name }}</p>
+        </div>
+        <form method="post" action="{{ url_for('account.delete_payment', pay_id=pay.id) }}"
+              onsubmit="return confirm('このカードを削除しますか？')">
+          <button class="btn btn-danger" type="submit" style="font-size:.8rem; padding:6px 12px;">削除</button>
+        </form>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state"><p>支払い方法が登録されていません</p></div>
+  {% endif %}
+
+  <a class="btn btn-sell" href="{{ url_for('account.add_payment') }}">＋ カードを追加</a>
+</div>
+{% endblock %}

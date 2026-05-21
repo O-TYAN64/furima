@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}通知{% endblock %}
+
+{% block content %}
+<div class="inner form-page">
+  <h1 class="page-title">通知</h1>
+
+  {% if notifications %}
+    <div class="notif-list">
+      {% for n in notifications %}
+        <{% if n.url %}a href="{{ n.url }}"{% else %}div{% endif %}
+           class="notif-item {% if not n.is_read %}notif-unread{% endif %}">
+          <div class="notif-dot"></div>
+          <div class="notif-content">
+            <p class="notif-message">{{ n.message }}</p>
+            <p class="notif-time">{{ n.created_at.strftime('%Y/%m/%d %H:%M') }}</p>
+          </div>
+        </{% if n.url %}a{% else %}div{% endif %}>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">🔔</div>
+      <p>通知はありません</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

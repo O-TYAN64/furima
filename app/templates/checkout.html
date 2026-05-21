@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}注文内容の確認{% endblock %}
+
+{% block content %}
+<div class="checkout-wrap inner">
+
+  <!-- 左カラム：住所・支払い選択 -->
+  <div class="checkout-left">
+    <h1 class="checkout-title">注文内容の確認</h1>
+
+    <form method="post" action="{{ url_for('main.buy', item_id=item.id) }}" id="checkoutForm">
+
+      <!-- ============ お届け先 ============ -->
+      <section class="co-section">
+        <div class="co-section-head">
+          <h2>📬 お届け先</h2>
+
+        {% if addresses %}
+            <a class="co-edit-link"
+             href="{{ url_for('account.add_address', next=request.url) }}">＋ 新しい住所を追加</a>
+        </div>
+          <div class="addr-list">
+            {% for addr in addresses %}
+              <label class="addr-card {% if addr == default_addr %}selected{% endif %}">
+                <input type="radio" name="address_id" value="{{ addr.id }}"
+                       {% if addr == default_addr %}checked{% endif %}>
+                <div class="addr-card-body">
+                  <div class="addr-card-top">
+                    <span class="addr-name">{{ addr.recipient_name }}</span>
+                    <span class="addr-label-badge">{{ addr.label }}</span>
+                    {% if addr.is_default %}<span class="default-badge">デフォルト</span>{% endif %}
+                  </div>
+                  <p class="addr-text">〒{{ addr.postal_code }}</p>
+                  <p class="addr-text">{{ addr.full_address() }}</p>
+                  <p class="addr-text">📞 {{ addr.phone }}</p>
+                </div>
+                <div class="addr-card-check">✓</div>
+              </label>
+            {% endfor %}
+          </div>
+        {% else %}
+        </div>
+          <div class="co-empty">
+            <p>住所が登録されていません</p>
+            <a class="btn btn-outline"
+               href="{{ url_for('account.add_address', next=request.url) }}">住所を追加する</a>
+          </div>
+        {% endif %}
+      </section>
+
+      <!-- ============ 支払い方法 ============ -->
+      <section class="co-section">
+        <div class="co-section-head">
+          <h2>💳 支払い方法</h2>
+          
+        {% if payments %}
+            <a class="co-edit-link"
+             href="{{ url_for('account.add_payment', next=request.url) }}">＋ 新しいカードを追加</a>
+        </div>
+          <div class="pay-list">
+            {% for pay in payments %}
+              <label class="pay-card {% if pay == default_pay %}selected{% endif %}">
+                <input type="radio" name="payment_id" value="{{ pay.id }}"
+                       {% if pay == default_pay %}checked{% endif %}>
+                <div class="pay-card-body">
+                  <span class="card-brand-icon" data-brand="{{ pay.card_brand }}">{{ pay.card_brand }}</span>
+                  <span class="pay-masked">**** **** **** {{ pay.last4 }}</span>
+                  <span class="pay-expiry">{{ pay.expiry() }}</span>
+                  <span class="pay-holder">{{ pay.card_name }}</span>
+                  {% if pay.is_default %}<span class="default-badge">デフォルト</span>{% endif %}
+                </div>
+                <div class="addr-card-check">✓</div>
+              </label>
+            {% endfor %}
+          </div>
+        {% else %}
+        </div>
+          <div class="co-empty">
+            <p>支払い方法が登録されていません</p>
+            <a class="btn btn-outline"
+               href="{{ url_for('account.add_payment', next=request.url) }}">カードを追加する</a>
+          </div>
+        {% endif %}
+      </section>
+
+      <!-- ============ 注文確定ボタン ============ -->
+      <section class="co-section co-confirm-section">
+        {% if addresses and payments %}
+          <button class="btn btn-buy full-w co-confirm-btn" type="submit"
+                  onclick="return confirm('注文を確定しますか？')">
+            注文を確定する
+          </button>
+          <p class="co-confirm-note">
+            ボタンを押すと購入が完了します。キャンセルはできません。
+          </p>
+        {% else %}
+          <p class="co-warn">住所と支払い方法を登録してから購入できます。</p>
+        {% endif %}
+      </section>
+
+    </form>
+  </div>
+
+  <!-- 右カラム：注文サマリー -->
+  <div class="checkout-right">
+    <div class="order-summary">
+      <h3 class="summary-title">注文サマリー</h3>
+      <div class="summary-item">
+        <div class="summary-img">
+          {% if item.image_path %}
+            <img src="{{ url_for('static', filename=item.image_path) }}" alt="{{ item.title }}">
+          {% else %}
+            <div class="summary-no-img">📦</div>
+          {% endif %}
+        </div>
+        <div class="summary-item-info">
+          <p class="summary-item-name">{{ item.title }}</p>
+          <p class="summary-item-cond">{{ item.condition }}</p>
+          <p class="summary-item-seller">出品者：{{ item.seller.get_display_name() }}</p>
+        </div>
+      </div>
+      <hr class="summary-hr">
+      <div class="summary-row">
+        <span>商品代金</span>
+        <span>¥{{ "{:,}".format(item.price) }}</span>
+      </div>
+      <div class="summary-row">
+        <span>配送料</span>
+        <span class="free-label">無料</span>
+      </div>
+      <hr class="summary-hr">
+      <div class="summary-row summary-total">
+        <span>合計</span>
+        <span>¥{{ "{:,}".format(item.price) }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('input[type="radio"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const name = radio.name;
+    document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+      r.closest('.addr-card, .pay-card').classList.toggle('selected', r.checked);
+    });
+  });
+});
+</script>
+{% endblock %}
