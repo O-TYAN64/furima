@@ -1,6 +1,9 @@
 __pycache__/
-.env
 *.pyc
 *.pyo
 database.db
 items/
+venv/
+.vscode/
+# .envファイルは環境変数を定義するためのもので、機密情報が含まれることが多いため、Gitリポジトリに含めないようにします。
+.env
