@@ -73,17 +73,16 @@ document.getElementById('postalLookup').addEventListener('click', async () => {
   status.textContent = '検索中…';
   status.style.color = 'var(--muted)';
   try {
-    const res  = await fetch(`https://zipcloud.ibsreg.com/api/search?zipcode=${raw}`);
+    const res  = await fetch(`/api/postal?zipcode=${raw}`);
     const data = await res.json();
-    if (data.results && data.results[0]) {
-      const r = data.results[0];
-      document.getElementById('prefecture').value = r.address1;
-      document.getElementById('city').value       = r.address2 + r.address3;
+    if (res.ok) {
+      document.getElementById('prefecture').value = data.prefecture;
+      document.getElementById('city').value       = data.city;
       document.getElementById('street').focus();
       status.textContent = '✓ 住所を自動入力しました';
       status.style.color = 'var(--green)';
     } else {
-      status.textContent = '該当する住所が見つかりませんでした';
+      status.textContent = data.error || '住所が見つかりませんでした';
       status.style.color = 'var(--red)';
     }
   } catch {

@@ -5,40 +5,44 @@
 <div class="inner form-page">
   <h1 class="page-title">商品情報を編集</h1>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="flash flash-{{ category }}">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
   <form class="sell-form" method="post" enctype="multipart/form-data">
-    <!-- 画像アップロード -->
+
+    <!-- 画像 -->
     <div class="form-group">
-      <label>商品画像</label>
-      <div class="img-upload-area" id="uploadArea">
-        <input type="file" name="image" id="imageInput" accept="image/*" hidden>
-        <div class="upload-placeholder" id="uploadPlaceholder"
-             {% if item.image_path %}style="display:none"{% endif %}>
-          <span class="upload-icon">📷</span>
-          <p>クリックして画像を変更</p>
-          <p class="upload-hint">PNG / JPG / GIF（16MB以内）</p>
+      <label>商品画像（最大4枚）</label>
+
+      {% set all_imgs = item.all_images() %}
+      {% if all_imgs %}
+        <div class="current-images">
+          <p class="form-hint" style="margin-bottom:8px;">現在の画像</p>
+          <div class="preview-grid">
+            {% for img in all_imgs %}
+              <div class="preview-thumb">
+                <img src="{{ url_for('static', filename=img) }}" alt="">
+                {% if loop.first %}<span class="preview-main-badge">メイン</span>{% endif %}
+              </div>
+            {% endfor %}
+          </div>
         </div>
-        <img id="preview"
-             src="{% if item.image_path %}{{ url_for('static', filename=item.image_path) }}{% endif %}"
-             alt="" style="{% if not item.image_path %}display:none;{% endif %} max-height:300px; border-radius:12px;">
+      {% endif %}
+
+      <div class="multi-upload-area" id="uploadArea" style="margin-top:12px;">
+        <input type="file" name="images" id="imageInput" accept="image/*" multiple hidden>
+        <div class="multi-upload-placeholder" id="uploadPlaceholder">
+          <span class="upload-icon">📷</span>
+          <p>クリックして画像を差し替え</p>
+          <p class="upload-hint">新しい画像を選ぶと現在の画像が置き換わります（最大4枚）</p>
+        </div>
+        <div class="preview-grid" id="previewGrid"></div>
       </div>
     </div>
 
-    <!-- 商品名 -->
     <div class="form-group">
       <label for="title">商品名 <span class="required">*</span></label>
       <input type="text" id="title" name="title" maxlength="100"
              value="{{ item.title }}" required>
     </div>
 
-    <!-- カテゴリ -->
     <div class="form-group">
       <label for="category">カテゴリ <span class="required">*</span></label>
       <select id="category" name="category" required>
@@ -48,7 +52,6 @@
       </select>
     </div>
 
-    <!-- 状態 -->
     <div class="form-group">
       <label for="condition">商品の状態</label>
       <select id="condition" name="condition">
@@ -58,7 +61,6 @@
       </select>
     </div>
 
-    <!-- 価格 -->
     <div class="form-group">
       <label for="price">販売価格 <span class="required">*</span></label>
       <div class="price-input-wrap">
@@ -69,7 +71,6 @@
       <p class="form-hint">最低出品価格 ¥300</p>
     </div>
 
-    <!-- 説明文 -->
     <div class="form-group">
       <label for="description">商品の説明</label>
       <textarea id="description" name="description" rows="6">{{ item.description or '' }}</textarea>
@@ -86,23 +87,30 @@
 
 {% block scripts %}
 <script>
-const area = document.getElementById('uploadArea');
-const input = document.getElementById('imageInput');
+const area        = document.getElementById('uploadArea');
+const input       = document.getElementById('imageInput');
 const placeholder = document.getElementById('uploadPlaceholder');
-const preview = document.getElementById('preview');
+const grid        = document.getElementById('previewGrid');
 
-area.addEventListener('click', () => input.click());
+area.addEventListener('click', e => {
+  if (!e.target.closest('.preview-thumb')) input.click();
+});
 
 input.addEventListener('change', () => {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-    placeholder.style.display = 'none';
-  };
-  reader.readAsDataURL(file);
+  const files = Array.from(input.files).slice(0, 4);
+  grid.innerHTML = '';
+  placeholder.style.display = files.length ? 'none' : '';
+  files.forEach((f, i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preview-thumb';
+      wrap.innerHTML = `<img src="${e.target.result}" alt="">
+        ${i === 0 ? '<span class="preview-main-badge">メイン</span>' : ''}`;
+      grid.appendChild(wrap);
+    };
+    reader.readAsDataURL(f);
+  });
 });
 </script>
 {% endblock %}

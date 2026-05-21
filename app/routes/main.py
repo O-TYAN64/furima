@@ -3,6 +3,10 @@
 # =========================
 
 import os, uuid, logging
+from urllib.request import urlopen
+from urllib.parse import urlencode
+from urllib.error import URLError
+import json as _json
 from flask import (Blueprint, render_template, request,
                    redirect, url_for, flash, jsonify, current_app, abort)
 from flask_login import login_required, current_user
@@ -394,6 +398,52 @@ def setting():
         flash("プロフィールを更新しました。", "success")
         return redirect(url_for("main.setting"))
     return render_template("setting.html")
+
+
+# ======================== 郵便番号プロキシ ========================
+def _fetch_json(url, timeout=5):
+    with urlopen(url, timeout=timeout) as resp:
+        return _json.loads(resp.read().decode())
+
+@main.route("/api/postal")
+def postal_lookup():
+    zipcode = request.args.get("zipcode", "").replace("-", "").strip()
+    if not zipcode.isdigit() or len(zipcode) != 7:
+        return jsonify({"error": "郵便番号は7桁の数字で入力してください"}), 400
+
+    # --- API 1: zipcloud ---
+    try:
+        data = _fetch_json(
+            f"https://zipcloud.ibsreg.com/api/search?zipcode={zipcode}")
+        if data.get("results"):
+            r = data["results"][0]
+            return jsonify({"prefecture": r["address1"],
+                            "city": r["address2"] + r["address3"]})
+    except Exception:
+        logger.warning("zipcloud failed for %s", zipcode)
+
+    # --- API 2: zipaddress.net (フォールバック) ---
+    try:
+        data = _fetch_json(
+            f"https://api.zipaddress.net/?zipcode={zipcode}")
+        if data.get("code") == 200 and data.get("data"):
+            d = data["data"]
+            return jsonify({"prefecture": d["pref"],
+                            "city": d["city"] + d.get("town", "")})
+    except Exception:
+        logger.warning("zipaddress.net failed for %s", zipcode)
+
+    # --- API 3: postcode.teraren.com (第2フォールバック) ---
+    try:
+        data = _fetch_json(
+            f"https://postcode.teraren.com/postcodes/{zipcode}.json")
+        if data.get("prefecture"):
+            return jsonify({"prefecture": data["prefecture"],
+                            "city": data.get("city", "") + data.get("town", "")})
+    except Exception:
+        logger.warning("postcode.teraren.com failed for %s", zipcode)
+
+    return jsonify({"error": "住所の検索に失敗しました。手動で入力してください"}), 503
 
 
 # ======================== 商品削除 ========================

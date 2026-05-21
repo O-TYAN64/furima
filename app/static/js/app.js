@@ -16,16 +16,11 @@ document.addEventListener("DOMContentLoaded", () => {
           method: "POST",
           headers: { "X-Requested-With": "XMLHttpRequest" },
         });
-        if (!res.ok) {
-          // 未ログイン等
-          return;
-        }
-        const data = await res.json();
+        if (!res.ok) return;
+        const data  = await res.json();
         const icon  = likeBtn.querySelector(".like-icon");
         const count = likeBtn.querySelector(".like-count");
-
         count.textContent = data.count;
-
         if (data.liked) {
           likeBtn.classList.add("liked");
           icon.textContent = "♥";
@@ -43,13 +38,25 @@ document.addEventListener("DOMContentLoaded", () => {
   // ========================
   // フラッシュメッセージ 自動フェード
   // ========================
-  const flashes = document.querySelectorAll(".flash");
-  flashes.forEach(f => {
+  document.querySelectorAll(".flash").forEach(f => {
     setTimeout(() => {
       f.style.transition = "opacity .5s";
-      f.style.opacity = "0";
+      f.style.opacity    = "0";
       setTimeout(() => f.remove(), 500);
     }, 4000);
+  });
+
+  // ========================
+  // チェックアウト ラジオ選択ハイライト
+  // ========================
+  document.querySelectorAll('input[type="radio"]').forEach(radio => {
+    radio.addEventListener("change", () => {
+      const name = radio.name;
+      document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+        r.closest(".addr-card, .pay-card")
+         ?.classList.toggle("selected", r.checked);
+      });
+    });
   });
 
 });
